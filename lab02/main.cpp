@@ -179,20 +179,21 @@ double prompt(string message)
 
    return response;
 }
-
-void runTests()
-{
-   cout << "Running test: Hard Landing\n\n";
-   testMain(100.0, 10.53, -13.959, -45.0, 0.0);
-   cout << "Running test: Crash\n\n";
-   testMain(207.77, -35.00, -15.00, 90.0, 45.0);
-   cout << "Running test: Armstrong is awesome!\n\n";
-   testMain(56.11, 10.00, -10.000, -42.185, 0.0);
-}
+/**************************************************
+ * TEST MAIN
+ *      Executes the logic of main, but with previously written unit tests instead of user input.
+ * INPUT
+ *      y: altitude
+ *      dx: horizontal velocity
+ *      dy: vertical velocity
+ *      aDegrees1: initial angle
+ *      aDegrees2: secondary angle
+ * OUTPUT
+ *      void : displays simulation data for two five second intervals.
+ ***************************************************/
 void testMain(double y, double dx, double dy, double aDegrees1, double aDegrees2)
 {
    double x = INITIAL_X_POS;
-   double t = TIME_INTERVAL;
 
    // Angle in radians
    double aRadians = toRadians(aDegrees1);
@@ -265,6 +266,24 @@ void testMain(double y, double dx, double dy, double aDegrees1, double aDegrees2
       cout << "angle: " << aDegrees2 << "deg \n";
    }
 }
+/**************************************************
+ * RUN TESTS
+ * Calls testMain with testcase parameters.
+ * INPUT
+ *      NA
+ * OUTPUT
+ *      NA
+ ***************************************************/
+void runTests()
+{
+   cout << "Running test: Hard Landing\n\n";
+   testMain(100.0, 10.53, -13.959, -45.0, 0.0);
+   cout << "\nRunning test: Crash\n\n";
+   testMain(207.77, -35.00, -15.00, 90.0, 45.0);
+   cout << "\nRunning test: Armstrong is awesome!\n\n";
+   testMain(56.11, 10.00, -10.000, -42.185, 0.0);
+}
+
 /****************************************************************
  * MAIN
  * Prompt for input, compute new position, and display output
@@ -282,7 +301,6 @@ int main()
    double y = prompt("What is your altitude (m)? ");
    double x = INITIAL_X_POS;
    double aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
-   double t = TIME_INTERVAL;
    cout << endl;
 
    // Angle in radians
