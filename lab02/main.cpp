@@ -7,8 +7,11 @@
  *      Simulate the Apollo 11 landing
  * 4. What was the hardest part? Be as specific as possible.
  *      It seemed pretty straight forward, the most difficult was probably changing some of the output and input statements.
+ *      *revised*
+ *      Not repeating code by writing more modular functions proved challenging for me. I had to learn more about pass by reference
+ *      in order for the code to remain concise.
  * 5. How long did it take for you to complete the assignment?
- *      We worked together for an hour and a half.
+ *      We worked together for approximately 5 hours.
  *****************************************************************/
 
 #include <iostream> // for CIN and COUT
@@ -23,7 +26,7 @@ using namespace std;
 #define THRUST 45000.000  // Thrust of main engine, in Newtons (kg m/s^2)
 #define INITIAL_X_POS 0.0 // Assuming initial horizontal position to be 0
 #define TIME_INTERVAL 1.0 // Calculations are done in 1 second interval
-#define TEST_CASES true   // boolean value to run test cases or not
+// #define RUN_TEST          // if define run test cases or not
 /***************************************************
  * COMPUTE DISTANCE
  * Apply inertia to compute a new position using the distance equation.
@@ -180,200 +183,175 @@ double prompt(string message)
    return response;
 }
 /**************************************************
- * TEST MAIN
- *      Executes the logic of main, but with previously written unit tests instead of user input.
+ * Rotate LM
+ * Computes the vector components of acceleration based on angle.
  * INPUT
+ *      accelerationThrust: Total acceleration of ML
+ *      aDegrees: Angle of ML
+ * OUTPUT
+ *      returns an array of 3 doubles [ddx, ddy, aRadians]
+ ***************************************************/
+void rotateLM(double accelerationThrust, double aDegrees, double &aRadians, double &ddx, double &ddy)
+{
+   aRadians = toRadians(aDegrees);
+   // Horizontal acceleration due to thrust
+   ddx = computeX(aRadians, accelerationThrust);
+   // Vertical acceleration due to thrust
+   ddy = computeY(aRadians, accelerationThrust) + GRAVITY;
+}
+/**************************************************
+ * MOVE LM
+ * Updates LM position and velocity, calls displayStats to display updated position and velocity
+ * INPUT
+ *      x: horizontal position
  *      y: altitude
  *      dx: horizontal velocity
  *      dy: vertical velocity
- *      aDegrees1: initial angle
- *      aDegrees2: secondary angle
+ *      ddx: horizontal acceleration
+ *      ddy: vertical acceleration
+ *      aDegrees: angle
  * OUTPUT
- *      void : displays simulation data for two five second intervals.
+ *      NA
  ***************************************************/
-void testMain(double y, double dx, double dy, double aDegrees1, double aDegrees2)
+void moveLM(double &x, double &y, double &dx, double &dy, double &ddx, double &ddy, double &aDegrees, double &v)
 {
-   double x = INITIAL_X_POS;
-
-   // Angle in radians
-   double aRadians = toRadians(aDegrees1);
-   // Acceleration due to thrust
-   double accelerationThrust = computeAccel(THRUST, WEIGHT);
-   // Horizontal acceleration due to thrust
-   double ddxThrust = computeX(aRadians, accelerationThrust);
-   // Vertical acceleration due to thrust
-   double ddyThrust = computeY(aRadians, accelerationThrust);
-   // Total horizontal acceleration
-   double ddx = ddxThrust;
-   // Total vertical acceleration
-   double ddy = ddyThrust + GRAVITY;
-   double v;
-
-   cout << "For the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-   for (int i = 0; i < 5; i++)
-   {
-      // Total horizontal velocity
-      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
-      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-                                 // y acceleration = ddyThrust + gravity
-                                 // Total vertical velocity
-      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-                                 // New total velocity
-      v = computeTotal(dx, dy);
-      // Compute distance traveled for each interval by x and y
-      x = computeDis(x, dx, TIME_INTERVAL, ddx);
-      y = computeDis(y, dy, TIME_INTERVAL, ddy);
-      // Output
-      cout.setf(ios::fixed | ios::showpoint);
-      cout.precision(2);
-      cout << i + 1 << "s - ";
-      cout << "x, y: (" << x << ", " << y << ")m ";
-      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
-      cout << "speed: " << v << "m/s ";
-      cout << "angle: " << aDegrees1 << "deg \n";
-   }
-
-   aRadians = toRadians(aDegrees2);
-   // Horizontal acceleration due to thrust
-   ddxThrust = computeX(aRadians, accelerationThrust);
-   // Vertical acceleration due to thrust
-   ddyThrust = computeY(aRadians, accelerationThrust);
-   // Total horizontal acceleration
-   ddx = ddxThrust;
-   // Total vertical acceleration
-   ddy = ddyThrust + GRAVITY;
-
-   cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-   for (int i = 0; i < 5; i++)
-   {
-      // Total horizontal velocity
-      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
-      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-      // Total vertical velocity
-      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-      // New total velocity
-      v = computeTotal(dx, dy);
-      // Compute distance traveled for each interval by x and y
-      x = computeDis(x, dx, TIME_INTERVAL, ddx);
-      y = computeDis(y, dy, TIME_INTERVAL, ddy);
-      // Output
-      cout.setf(ios::fixed | ios::showpoint);
-      cout.precision(2);
-      cout << i + 6 << "s - ";
-      cout << "x, y: (" << x << ", " << y << ")m ";
-      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
-      cout << "speed: " << v << "m/s ";
-      cout << "angle: " << aDegrees2 << "deg \n";
-   }
+   // Total horizontal velocity
+   dx = computeVel(dx, ddx, TIME_INTERVAL);
+   // Total vertical velocity
+   dy = computeVel(dy, ddy, TIME_INTERVAL);
+   v = computeTotal(dx, dy);
+   // Compute distance traveled for each interval by x and y
+   x = computeDis(x, dx, TIME_INTERVAL, ddx);
+   y = computeDis(y, dy, TIME_INTERVAL, ddy);
 }
 /**************************************************
- * RUN TESTS
- * Calls testMain with testcase parameters.
+ * DISPLAY STATS
+ * Displays the LM position and veloctity statistics
  * INPUT
- *      NA
+ *      x: horizontal postion
+ *      y: vertical positon
+ *      dx: horizontal velocity
+ *      dy: vertical velocity
+ *      v: total velocity magnitude
+ *      degrees: angle of LM
+ *      seconds: time elapsed
  * OUTPUT
  *      NA
  ***************************************************/
-void runTests()
+void displayStats(double &x, double &y, double &dx, double &dy, double &v, double &aDegrees, double &secondsElapsed)
 {
-   cout << "Running test: Hard Landing\n\n";
-   testMain(100.0, 10.53, -13.959, -45.0, 0.0);
-   cout << "\nRunning test: Crash\n\n";
-   testMain(207.77, -35.00, -15.00, 90.0, 45.0);
-   cout << "\nRunning test: Armstrong is awesome!\n\n";
-   testMain(56.11, 10.00, -10.000, -42.185, 0.0);
+   // Output
+   cout.setf(ios::fixed | ios::showpoint);
+   cout.precision(2);
+   cout << secondsElapsed << "s - ";
+   cout << "x, y: (" << x << ", " << y << ")m ";
+   cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
+   cout << "speed: " << v << "m/s ";
+   cout << "angle: " << aDegrees << "deg \n";
 }
-
 /****************************************************************
  * MAIN
  * Prompt for input, compute new position, and display output
  ****************************************************************/
 int main()
 {
-   if (TEST_CASES)
-   {
-      runTests();
-      return 0;
-   }
-   // Prompt for input and variables to be computed
-   double dx = prompt("What is your horizontal velocity (m/s)? ");
-   double dy = prompt("What is your vertical velocity (m/s)? ");
-   double y = prompt("What is your altitude (m)? ");
+   // variable intializations
    double x = INITIAL_X_POS;
-   double aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
-   cout << endl;
-
-   // Angle in radians
-   double aRadians = toRadians(aDegrees);
-   // Acceleration due to thrust
-   double accelerationThrust = computeAccel(THRUST, WEIGHT);
-   // Horizontal acceleration due to thrust
-   double ddxThrust = computeX(aRadians, accelerationThrust);
-   // Vertical acceleration due to thrust
-   double ddyThrust = computeY(aRadians, accelerationThrust);
-   // Total horizontal acceleration
-   double ddx = ddxThrust;
-   // Total vertical acceleration
-   double ddy = ddyThrust + GRAVITY;
+   double y;
+   double dx;
+   double dy;
+   double ddx;
+   double ddy;
+   double aDegrees;
+   double aRadians;
    double v;
+   double accelerationThrust = computeAccel(THRUST, WEIGHT);
+   double secondsElapsed = 0;
 
+#ifdef RUN_TEST
+   // {y, dx, dy, degrees1, degrees2}
+   double hardLanding[] = {100.0, 10.53, -13.959, -45.0, 0.0};
+   double crash[] = {207.77, -35.00, -15.00, 90.0, 45.0};
+   double armstrong[] = {56.11, 10.00, -10.00, -42.185, 0.0};
+
+   cout << "Running test: Hard Landing\n\n";
+   y = hardLanding[0];
+   dx = hardLanding[1];
+   dy = hardLanding[2];
+   aDegrees = hardLanding[3];
+   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+   for (int i = 0; i < 10; i++)
+   {
+      if (i == 5)
+      {
+         aDegrees = hardLanding[4];
+         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+      }
+      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
+   }
+
+   cout << "\nRunning test: Crash\n\n";
+   y = crash[0];
+   dx = crash[1];
+   dy = crash[2];
+   aDegrees = crash[3];
+   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+   secondsElapsed = 0; // reset secondsElapsed
+   for (int i = 0; i < 10; i++)
+   {
+      if (i == 5)
+      {
+         aDegrees = crash[4];
+         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+      }
+      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
+   }
+
+   cout << "\nRunning test: Armstrong is awesome!\n\n";
+   y = armstrong[0];
+   dx = armstrong[1];
+   dy = armstrong[2];
+   aDegrees = armstrong[3];
+   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+   secondsElapsed = 0; // reset secondsElapsed
+   for (int i = 0; i < 10; i++)
+   {
+      if (i == 5)
+      {
+         aDegrees = armstrong[4];
+         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+      }
+      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
+   }
+   return 0;
+#endif
+
+   // Prompt for input and variables to be computed
+   dx = prompt("What is your horizontal velocity (m/s)? ");
+   dy = prompt("What is your vertical velocity (m/s)? ");
+   y = prompt("What is your altitude (m)? ");
+   aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
+   cout << endl;
    cout << "For the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-   for (int i = 0; i < 5; i++)
+   for (int i = 0; i < 10; i++)
    {
-      // Total horizontal velocity
-      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
-      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-                                 // y acceleration = ddyThrust + gravity
-                                 // Total vertical velocity
-      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-                                 // New total velocity
-      v = computeTotal(dx, dy);
-      // Compute distance traveled for each interval by x and y
-      x = computeDis(x, dx, TIME_INTERVAL, ddx);
-      y = computeDis(y, dy, TIME_INTERVAL, ddy);
-      // Output
-      cout.setf(ios::fixed | ios::showpoint);
-      cout.precision(2);
-      cout << i + 1 << "s - ";
-      cout << "x, y: (" << x << ", " << y << ")m ";
-      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
-      cout << "speed: " << v << "m/s ";
-      cout << "angle: " << aDegrees << "deg \n";
+      if (i == 0)
+         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+      if (i == 5)
+      {
+         aDegrees = prompt("\nWhat is the angle of the LM where 0 is up (degrees)? ");
+         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+         cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
+      }
+      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
    }
-
-   aDegrees = prompt("\nWhat is the angle of the LM where 0 is up (degrees)? ");
-   aRadians = toRadians(aDegrees);
-   // Horizontal acceleration due to thrust
-   ddxThrust = computeX(aRadians, accelerationThrust);
-   // Vertical acceleration due to thrust
-   ddyThrust = computeY(aRadians, accelerationThrust);
-   // Total horizontal acceleration
-   ddx = ddxThrust;
-   // Total vertical acceleration
-   ddy = ddyThrust + GRAVITY;
-
-   cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-   for (int i = 0; i < 5; i++)
-   {
-      // Total horizontal velocity
-      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
-      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-      // Total vertical velocity
-      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
-      // New total velocity
-      v = computeTotal(dx, dy);
-      // Compute distance traveled for each interval by x and y
-      x = computeDis(x, dx, TIME_INTERVAL, ddx);
-      y = computeDis(y, dy, TIME_INTERVAL, ddy);
-      // Output
-      cout.setf(ios::fixed | ios::showpoint);
-      cout.precision(2);
-      cout << i + 6 << "s - ";
-      cout << "x, y: (" << x << ", " << y << ")m ";
-      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
-      cout << "speed: " << v << "m/s ";
-      cout << "angle: " << aDegrees << "deg \n";
-   }
-
    return 0;
 }
