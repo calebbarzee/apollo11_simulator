@@ -23,7 +23,7 @@ using namespace std;
 #define THRUST 45000.000  // Thrust of main engine, in Newtons (kg m/s^2)
 #define INITIAL_X_POS 0.0 // Assuming initial horizontal position to be 0
 #define TIME_INTERVAL 1.0 // Calculations are done in 1 second interval
-
+#define TEST_CASES true   // boolean value to run test cases or not
 /***************************************************
  * COMPUTE DISTANCE
  * Apply inertia to compute a new position using the distance equation.
@@ -182,9 +182,88 @@ double prompt(string message)
 
 void runTests()
 {
+   cout << "Running test: Hard Landing\n\n";
+   testMain(100.0, 10.53, -13.959, -45.0, 0.0);
+   cout << "Running test: Crash\n\n";
+   testMain(207.77, -35.00, -15.00, 90.0, 45.0);
+   cout << "Running test: Armstrong is awesome!\n\n";
+   testMain(56.11, 10.00, -10.000, -42.185, 0.0);
 }
-void testMain()
+void testMain(double y, double dx, double dy, double aDegrees1, double aDegrees2)
 {
+   double x = INITIAL_X_POS;
+   double t = TIME_INTERVAL;
+
+   // Angle in radians
+   double aRadians = toRadians(aDegrees1);
+   // Acceleration due to thrust
+   double accelerationThrust = computeAccel(THRUST, WEIGHT);
+   // Horizontal acceleration due to thrust
+   double ddxThrust = computeX(aRadians, accelerationThrust);
+   // Vertical acceleration due to thrust
+   double ddyThrust = computeY(aRadians, accelerationThrust);
+   // Total horizontal acceleration
+   double ddx = ddxThrust;
+   // Total vertical acceleration
+   double ddy = ddyThrust + GRAVITY;
+   double v;
+
+   cout << "For the next 5 seconds with the main engine on, the position of the lander is:\n\n";
+   for (int i = 0; i < 5; i++)
+   {
+      // Total horizontal velocity
+      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
+      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
+                                 // y acceleration = ddyThrust + gravity
+                                 // Total vertical velocity
+      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
+                                 // New total velocity
+      v = computeTotal(dx, dy);
+      // Compute distance traveled for each interval by x and y
+      x = computeDis(x, dx, TIME_INTERVAL, ddx);
+      y = computeDis(y, dy, TIME_INTERVAL, ddy);
+      // Output
+      cout.setf(ios::fixed | ios::showpoint);
+      cout.precision(2);
+      cout << i + 1 << "s - ";
+      cout << "x, y: (" << x << ", " << y << ")m ";
+      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
+      cout << "speed: " << v << "m/s ";
+      cout << "angle: " << aDegrees1 << "deg \n";
+   }
+
+   aRadians = toRadians(aDegrees2);
+   // Horizontal acceleration due to thrust
+   ddxThrust = computeX(aRadians, accelerationThrust);
+   // Vertical acceleration due to thrust
+   ddyThrust = computeY(aRadians, accelerationThrust);
+   // Total horizontal acceleration
+   ddx = ddxThrust;
+   // Total vertical acceleration
+   ddy = ddyThrust + GRAVITY;
+
+   cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
+   for (int i = 0; i < 5; i++)
+   {
+      // Total horizontal velocity
+      // dx + ddxThrust * t equivalent to dx after following statement. (logic check)
+      dx += ddx * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
+      // Total vertical velocity
+      dy += ddy * TIME_INTERVAL; // TIME_INTERVAL is currently 1, but may change
+      // New total velocity
+      v = computeTotal(dx, dy);
+      // Compute distance traveled for each interval by x and y
+      x = computeDis(x, dx, TIME_INTERVAL, ddx);
+      y = computeDis(y, dy, TIME_INTERVAL, ddy);
+      // Output
+      cout.setf(ios::fixed | ios::showpoint);
+      cout.precision(2);
+      cout << i + 6 << "s - ";
+      cout << "x, y: (" << x << ", " << y << ")m ";
+      cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
+      cout << "speed: " << v << "m/s ";
+      cout << "angle: " << aDegrees2 << "deg \n";
+   }
 }
 /****************************************************************
  * MAIN
@@ -192,7 +271,11 @@ void testMain()
  ****************************************************************/
 int main()
 {
-
+   if (TEST_CASES)
+   {
+      runTests();
+      return 0;
+   }
    // Prompt for input and variables to be computed
    double dx = prompt("What is your horizontal velocity (m/s)? ");
    double dy = prompt("What is your vertical velocity (m/s)? ");
