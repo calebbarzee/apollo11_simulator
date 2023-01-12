@@ -189,7 +189,7 @@ int main()
    double dx =       prompt("What is your horizontal velocity (m/s)? ");
    double dy =       prompt("What is your vertical velocity (m/s)? ");
    double y =        prompt("What is your altitude (m)? ");
-   double x =        prompt("What is your position (m)? ");
+   double x =        0;
    double aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
    double t =        prompt("What is the time interval (s)? ");
    cout << endl;
