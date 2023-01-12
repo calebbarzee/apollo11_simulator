@@ -26,7 +26,7 @@ using namespace std;
 #define THRUST 45000.000  // Thrust of main engine, in Newtons (kg m/s^2)
 #define INITIAL_X_POS 0.0 // Assuming initial horizontal position to be 0
 #define TIME_INTERVAL 1.0 // Calculations are done in 1 second interval
-// #define RUN_TEST          // if define run test cases or not
+#define RUN_TEST          // if define run test cases or not
 /***************************************************
  * COMPUTE DISTANCE
  * Apply inertia to compute a new position using the distance equation.
@@ -298,6 +298,7 @@ int main()
    dy = crash[2];
    aDegrees = crash[3];
    rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+   x = 0;              // reset x
    secondsElapsed = 0; // reset secondsElapsed
    for (int i = 0; i < 10; i++)
    {
@@ -317,6 +318,7 @@ int main()
    dy = armstrong[2];
    aDegrees = armstrong[3];
    rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
+   x = 0;              // reset x
    secondsElapsed = 0; // reset secondsElapsed
    for (int i = 0; i < 10; i++)
    {
