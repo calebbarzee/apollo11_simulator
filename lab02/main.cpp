@@ -191,13 +191,14 @@ double prompt(string message)
  * OUTPUT
  *      returns an array of 3 doubles [ddx, ddy, aRadians]
  ***************************************************/
-void rotateLM(double accelerationThrust, double aDegrees, double &aRadians, double &ddx, double &ddy)
+pair<double, double> rotateLM(double accelerationThrust, double aDegrees)
 {
-   aRadians = toRadians(aDegrees);
+   double aRadians = toRadians(aDegrees);
    // Horizontal acceleration due to thrust
-   ddx = computeX(aRadians, accelerationThrust);
+   double ddx = computeX(aRadians, accelerationThrust);
    // Vertical acceleration due to thrust
-   ddy = computeY(aRadians, accelerationThrust) + GRAVITY;
+   double ddy = computeY(aRadians, accelerationThrust) + GRAVITY;
+   return make_pair(ddx, ddy);
 }
 /**************************************************
  * MOVE LM
@@ -209,17 +210,15 @@ void rotateLM(double accelerationThrust, double aDegrees, double &aRadians, doub
  *      dy: vertical velocity
  *      ddx: horizontal acceleration
  *      ddy: vertical acceleration
- *      aDegrees: angle
  * OUTPUT
  *      NA
  ***************************************************/
-void moveLM(double &x, double &y, double &dx, double &dy, double &ddx, double &ddy, double &aDegrees, double &v)
+void moveLM(double &x, double &y, double &dx, double &dy, double ddx, double ddy)
 {
    // Total horizontal velocity
    dx = computeVel(dx, ddx, TIME_INTERVAL);
    // Total vertical velocity
    dy = computeVel(dy, ddy, TIME_INTERVAL);
-   v = computeTotal(dx, dy);
    // Compute distance traveled for each interval by x and y
    x = computeDis(x, dx, TIME_INTERVAL, ddx);
    y = computeDis(y, dy, TIME_INTERVAL, ddy);
@@ -238,16 +237,81 @@ void moveLM(double &x, double &y, double &dx, double &dy, double &ddx, double &d
  * OUTPUT
  *      NA
  ***************************************************/
-void displayStats(double &x, double &y, double &dx, double &dy, double &v, double &aDegrees, double &secondsElapsed)
+void displayStats(double x, double y, double dx, double dy, double aDegrees, double secondsElapsed)
 {
    // Output
    cout.setf(ios::fixed | ios::showpoint);
    cout.precision(2);
    cout << secondsElapsed << "s - ";
-   cout << "x, y: (" << x << ", " << y << ")m ";
-   cout << "dx, dy: (" << dx << ", " << dy << ")m/s ";
-   cout << "speed: " << v << "m/s ";
-   cout << "angle: " << aDegrees << "deg \n";
+   cout << "x, y:(" << x << ", " << y << ")m ";
+   cout << "dx, dy:(" << dx << ", " << dy << ")m/s ";
+   cout << "speed:" << computeTotal(dx, dy) << "m/s ";
+   cout << "angle:" << aDegrees << "deg \n";
+}
+/****************************************************************
+ * RUN TEST
+ * Runs previously initialized tests of LM simulation
+ * INPUT
+ *      testName: string of test name to be run
+ *      testArray: array of test inputs ({y, dx, dy, degrees1, degrees2})
+
+ ****************************************************************/
+void runTest(string testName, double testArray[])
+{
+   // variable intializations
+   double x = INITIAL_X_POS;
+   double accelerationThrust = computeAccel(THRUST, WEIGHT);
+   double secondsElapsed = 0;
+   double y = testArray[0];
+   double dx = testArray[1];
+   double dy = testArray[2];
+   double aDegrees = testArray[3];
+   pair<double, double> accelVector = rotateLM(accelerationThrust, aDegrees);
+   cout << "\nRunning test: " << testName << "\n\n";
+   for (int i = 0; i < 10; i++)
+   {
+      if (i == 5)
+      {
+         aDegrees = testArray[4];
+         accelVector = rotateLM(accelerationThrust, aDegrees);
+      }
+      moveLM(x, y, dx, dy, accelVector.first, accelVector.second);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, aDegrees, secondsElapsed);
+   }
+}
+/****************************************************************
+ * RUN USER INIT
+ * Runs user initialized simulation of LM
+ ****************************************************************/
+void runUserInit()
+{
+   // initialize variables
+   double x = INITIAL_X_POS;
+   double accelerationThrust = computeAccel(THRUST, WEIGHT);
+   double secondsElapsed = 0;
+   pair<double, double> accelVector = make_pair(0.0, 0.0);
+   // Prompt for input and variables to be computed
+   double dx = prompt("What is your horizontal velocity (m/s)? ");
+   double dy = prompt("What is your vertical velocity (m/s)? ");
+   double y = prompt("What is your altitude (m)? ");
+   double aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
+   cout << endl;
+   cout << "For the next 5 seconds with the main engine on, the position of the lander is:\n\n";
+   for (int i = 0; i < 10; i++)
+   {
+      if (i == 0)
+         accelVector = rotateLM(accelerationThrust, aDegrees);
+      if (i == 5)
+      {
+         aDegrees = prompt("\nWhat is the angle of the LM where 0 is up (degrees)? ");
+         accelVector = rotateLM(accelerationThrust, aDegrees);
+         cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
+      }
+      moveLM(x, y, dx, dy, accelVector.first, accelVector.second);
+      secondsElapsed += TIME_INTERVAL;
+      displayStats(x, y, dx, dy, aDegrees, secondsElapsed);
+   }
 }
 /****************************************************************
  * MAIN
@@ -255,105 +319,23 @@ void displayStats(double &x, double &y, double &dx, double &dy, double &v, doubl
  ****************************************************************/
 int main()
 {
-   // variable intializations
-   double x = INITIAL_X_POS;
-   double y;
-   double dx;
-   double dy;
-   double ddx;
-   double ddy;
-   double aDegrees;
-   double aRadians;
-   double v;
-   double accelerationThrust = computeAccel(THRUST, WEIGHT);
-   double secondsElapsed = 0;
-
 #ifdef RUN_TEST
    // {y, dx, dy, degrees1, degrees2}
+   double example[] = {100, 0, -10, 60, -60};
    double hardLanding[] = {100.0, 10.53, -13.959, -45.0, 0.0};
    double crash[] = {207.77, -35.00, -15.00, 90.0, 45.0};
    double armstrong[] = {56.11, 10.00, -10.00, -42.185, 0.0};
 
-   cout << "Running test: Hard Landing\n\n";
-   y = hardLanding[0];
-   dx = hardLanding[1];
-   dy = hardLanding[2];
-   aDegrees = hardLanding[3];
-   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-   for (int i = 0; i < 10; i++)
-   {
-      if (i == 5)
-      {
-         aDegrees = hardLanding[4];
-         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-      }
-      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
-      secondsElapsed += TIME_INTERVAL;
-      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
-   }
-
-   cout << "\nRunning test: Crash\n\n";
-   y = crash[0];
-   dx = crash[1];
-   dy = crash[2];
-   aDegrees = crash[3];
-   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-   x = 0;              // reset x
-   secondsElapsed = 0; // reset secondsElapsed
-   for (int i = 0; i < 10; i++)
-   {
-      if (i == 5)
-      {
-         aDegrees = crash[4];
-         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-      }
-      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
-      secondsElapsed += TIME_INTERVAL;
-      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
-   }
-
-   cout << "\nRunning test: Armstrong is awesome!\n\n";
-   y = armstrong[0];
-   dx = armstrong[1];
-   dy = armstrong[2];
-   aDegrees = armstrong[3];
-   rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-   x = 0;              // reset x
-   secondsElapsed = 0; // reset secondsElapsed
-   for (int i = 0; i < 10; i++)
-   {
-      if (i == 5)
-      {
-         aDegrees = armstrong[4];
-         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-      }
-      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
-      secondsElapsed += TIME_INTERVAL;
-      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
-   }
+   //   string test0 = "Example";
+   //   runTest(test0, example);
+   string test1 = "Hard Landing";
+   runTest(test1, hardLanding);
+   string test2 = "Crash";
+   runTest(test2, crash);
+   string test3 = "Armstrong is awesome!";
+   runTest(test3, armstrong);
    return 0;
 #endif
-
-   // Prompt for input and variables to be computed
-   dx = prompt("What is your horizontal velocity (m/s)? ");
-   dy = prompt("What is your vertical velocity (m/s)? ");
-   y = prompt("What is your altitude (m)? ");
-   aDegrees = prompt("What is the angle of the LM where 0 is up (degrees)? ");
-   cout << endl;
-   cout << "For the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-   for (int i = 0; i < 10; i++)
-   {
-      if (i == 0)
-         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-      if (i == 5)
-      {
-         aDegrees = prompt("\nWhat is the angle of the LM where 0 is up (degrees)? ");
-         rotateLM(accelerationThrust, aDegrees, aRadians, ddx, ddy);
-         cout << "\nFor the next 5 seconds with the main engine on, the position of the lander is:\n\n";
-      }
-      moveLM(x, y, dx, dy, ddx, ddy, aDegrees, v);
-      secondsElapsed += TIME_INTERVAL;
-      displayStats(x, y, dx, dy, v, aDegrees, secondsElapsed);
-   }
+   runUserInit();
    return 0;
 }
